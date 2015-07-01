@@ -1,0 +1,10 @@
+{
+    "feeds" : [{
+        "feedURL" : "http://sploid.gizmodo.com/rss",
+        "extract" : "div.post-content",
+        "filters" : ["p[data-textannotation-id]", "div.ad-unit"]
+    }
+
+
+    ]
+}

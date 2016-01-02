@@ -90,7 +90,11 @@ $(function() {
             requestCrossDomain(link, photoplastyXpath, function(data) {
                 var lnk = $(data).attr("href");
                 var articleBox = $("<div id=\"article_" + i + "\" class=\"article_box\"></div>");
-                getPageData(lnk, articleBox);
+                if ($.cookie(lnk) == "1") {
+                } else {
+                    urlList.push(lnk);
+                    getPageData(lnk, articleBox);
+                }
             });
         } else if (temp.substr(0, 5) == "video") {
             //If it is a video link, pass it. Cracked videos are lame

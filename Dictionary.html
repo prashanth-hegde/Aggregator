@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<title>RSS Mashup</title>
+<head>
+    <script type="text/javascript" src="lib/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="lib/jqueryui/jquery-ui.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="lib/jqueryui/jquery-ui.css"/>
+    <script>
+    $(function() {
+        function requestCrossDomain( site, xpathParam, callback ) {
+            if ( !site ) {
+                console.log('No site was passed for requestCrossDomain()');
+                return false;
+            }
+            if ( !xpathParam ) {
+                xpathParam = "";
+            }
+            var yqlBase = 'http://query.yahooapis.com/v1/public/yql?q=';
+            var encodeBase = 'select * from html where url="' + site + '"';
+            var yqlCallBack = '&format=xml&callback=?';
+            var encode = encodeBase + xpathParam;
+            var yql = yqlBase + encodeURIComponent(encode) + yqlCallBack;
+
+            $.getJSON( yql, function(data) {
+                if ( data.results[0] ) {
+                    data = data.results[0].replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+
+                    if ( typeof callback === 'function') {
+                    callback(data);
+                    }
+                }
+                else console.log('Nothing returned from getJSON. URL=' + site);
+            });
+        }
+        requestCrossDomain('http://services.aonaware.com/DictService/DictService.asmx/Define?word=string', ' and xpath=//worddefinition', function(data) {
+            console.log(data);
+            var definition = $("<div id='definition'/>");
+            definition.append(data);
+            definition.dialog({maxWidth: 800});
+        });
+    });
+    </script>
+
+
+</head>
+<body>
+<div>
+
+</div>
+</body>
+</html>

@@ -3,7 +3,7 @@ $(function() {
 // ==========================================================================
 //    Setup
 // ==========================================================================
-    //var urlList = [];
+    var urlList = [];
     $( "#siteSelection" ).selectmenu();
     $( "#read" ).button();
     $( ".dropbtn" ).click( function() {
@@ -133,7 +133,11 @@ $(function() {
         for (var i=0; i<len; i++) {
             var lnk = response.responseData.feed.entries[i].link;
             var articleBox = $("<div id=\"article_" + i + "\" class=\"article_box\"></div>");
-            getIABPage(lnk, articleBox);
+            if ($.cookie(lnk) == "1") {
+            } else {
+                urlList.push(lnk);
+	        getIABPage(lnk, articleBox);
+	    }
         }
     }
 // =================================================================
@@ -197,14 +201,10 @@ $(function() {
 
     //Function to Mark all current articles as read
     function markAllRead() {
-        var urlList = ["Temp1", "Temp2"];
-        $.cookie({expires: 30, domain: 'rssmashup.com', path: '/127.0.0.1'});
         for(var i=0; i<urlList.length; i++) {
             console.log(urlList[i]);
             $.cookie(urlList[i], "1", {expires:30});
-            console.log("Reading back: " + $.cookie(urlList[i]));
         }
-        //console.log($.cookie());
     }
 
     //Function to parse a given rss feed

@@ -103,7 +103,11 @@ $(function() {
         } else {
             var pageUrl = crackedHome + temp;
             var articleBox = $("<div id=\"article_" + i + "\" class=\"article_box\"></div>");
-            getPageData(pageUrl, articleBox);
+            if ($.cookie(pageUrl) == "1") {
+            } else {
+                urlList.push(pageUrl);
+                getPageData(pageUrl, articleBox);
+	    }
         }
       }
     }

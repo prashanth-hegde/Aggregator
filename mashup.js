@@ -128,7 +128,6 @@ $(function() {
             var title = head.find("h1").text();
             var titleBox = $("<h3>" + title + "</h3>");
             head.remove();
-            var pagelnk = articleBox.find("p > a");
             articleBox.find(".wp-biographia-container-around").remove();
             articleBox.find(".yarpp-related").remove();
             $("#articles").append(titleBox);

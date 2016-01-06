@@ -128,6 +128,7 @@ $(function() {
             var title = head.find("h1").text();
             var titleBox = $("<h3>" + title + "</h3>");
             head.remove();
+            articleBox.find("p > a").each(function() {console.log(this.attr("href"));})
             articleBox.find(".wp-biographia-container-around").remove();
             articleBox.find(".yarpp-related").remove();
             $("#articles").append(titleBox);

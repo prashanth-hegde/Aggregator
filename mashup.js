@@ -128,16 +128,6 @@ $(function() {
             var title = head.find("h1").text();
             var titleBox = $("<h3>" + title + "</h3>");
             head.remove();
-	    articleBox.find("p > a").each(function(){
-                var imgBox = $("<img width='500'/>");
-                var href = $(this).attr("href");
-                if (href.match(/jpg$|png$/i)) {
-                    imgBox.attr("src", href);
-                    $(this).parent().append(imgBox);
-                    $(this).remove();
-                }
-            });
-
             articleBox.find(".wp-biographia-container-around").remove();
             articleBox.find(".yarpp-related").remove();
             $("#articles").append(titleBox);

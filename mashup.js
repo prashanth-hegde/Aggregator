@@ -3,6 +3,13 @@ $(function() {
 // ==========================================================================
 //    Setup
 // ==========================================================================
+
+// =============Test Begin ==================================================
+    //testUrl('http://www.i-am-bored.com/2016/06/40-photos-fancy-cant-think-up-witty-captions-for-108-pics.html');
+    //testUrl('http://www.i-am-bored.com/2016/06/a-color-based-breath-test-that-effectively-catches-lung-cancer-pic.html');
+    //return;
+// =============Test End   ==================================================
+
     var urlList = [];
     $( "#siteSelection" ).selectmenu();
     $( "#read" ).button();
@@ -43,32 +50,51 @@ $(function() {
 //    Cracked Feed Parsing Section
 // ==========================================================================
 
-    function getPageData(url, articleBox) {
+    function getPageData(url, articleBox, articleXpath) {
         var articleXpath = ' and xpath="//div[@class=\'mainFrame noMarginTopWithContent\']/section[@class=\'mainFrameModule last\']/div/article/section"';
         requestCrossDomain(url, articleXpath, function(result) {
-            result = result.replace(/data-img/g, 'src');
-            articleBox.append(result);
-            articleBox.find('script').remove();
-            var head = articleBox.find("header");
-            var title = head.find("h1").text();
-            head.remove();
-            articleBox.find("a[target=\"_blank\"]").parent().remove();
-            $(".socialShareAfterContent").remove();
-            $(".FacebookLike").remove();
-            var pageUrl = articleBox.find(".PaginationContent").find("ul li:first-child").next().next().find("a").attr("href");
-            var pageList = articleBox.find(".PaginationContent").find("ul li:first-child").next().text();
-            var curPage = parseInt(pageList.split(" ")[1]);
-            var totalPage = parseInt(pageList.split(" ")[3]);
-            articleBox.find("nav").remove();
-            //console.log("CurrPage = " + curPage + " TotalPage = " + totalPage);
-            if (curPage && totalPage && curPage < totalPage) {
-              //console.log(pageUrl);
-              getPageData(pageUrl, articleBox);
-            } else {
-                var titleBox = $("<h3>" + title + "</h3>");
-                articleBox.find("footer").remove();
-                $("#articles").append(titleBox);
-                $("#articles").append(articleBox);
+            if (!result) {
+                if (url.indexOf('cracked.com/blog') != -1 ||
+                    url.indexOf('cracked.com/article_') != -1) {
+                    //If it's a blog, retry the operation after 2 secs
+                    getPageData(url, articleBox, articleXpath);
+                }
+                else if (url.indexOf('CrackedRSS') != -1) {
+                    console.log ("This is a Photoplasty page. Needs different xpath");
+                }
+                else if (url.indexOf('') != -1) {
+                    console.log ("Personal experience article");
+                    var articleXpath = ' and xpath="//div[@class=\'contentWrapper\']"';
+                }
+                else {
+                    console.log("This page did not return any results. returning " + url);
+                }
+            }
+            else {
+                result = result.replace(/data-img/g, 'src');
+                articleBox.append(result);
+                articleBox.find('script').remove();
+                var head = articleBox.find("header");
+                var title = head.find("h1").text();
+                head.remove();
+                articleBox.find("a[target=\"_blank\"]").parent().remove();
+                $(".socialShareAfterContent").remove();
+                $(".FacebookLike").remove();
+                var pageUrl = articleBox.find(".PaginationContent").find("ul li:first-child").next().next().find("a").attr("href");
+                var pageList = articleBox.find(".PaginationContent").find("ul li:first-child").next().text();
+                var curPage = parseInt(pageList.split(" ")[1]);
+                var totalPage = parseInt(pageList.split(" ")[3]);
+                articleBox.find("nav").remove();
+                //console.log("CurrPage = " + curPage + " TotalPage = " + totalPage);
+                if (curPage && totalPage && curPage < totalPage) {
+                  //console.log(pageUrl);
+                  getPageData(pageUrl, articleBox);
+                } else {
+                    var titleBox = $("<h3>" + title + "</h3>");
+                    articleBox.find("footer").remove();
+                    $("#articles").append(titleBox);
+                    $("#articles").append(articleBox);
+                }
             }
         });
     }
@@ -120,6 +146,7 @@ $(function() {
 // IAB Parsing Section
 // =================================================================
     function getIABPage(url, articleBox) {
+        //var articleXpath = ' and xpath="//article[@class=\'post type-post status-publish\']"';
         var articleXpath = ' and xpath="//div[@class=\'col description\']"';
         requestCrossDomain(url, articleXpath, function(data) {
             articleBox.append(data);
@@ -130,6 +157,11 @@ $(function() {
             head.remove();
             articleBox.find(".wp-biographia-container-around").remove();
             articleBox.find(".yarpp-related").remove();
+            articleBox.find(".slideshow-nav").remove();
+            articleBox.find("img.psp-active").each(function(k, image) {
+                var act_img = ($(image).attr("data-img"));
+                $(image).attr("src", act_img);
+            });
             $("#articles").append(titleBox);
             $("#articles").append(articleBox);
         });
@@ -140,6 +172,7 @@ $(function() {
         var len = response.responseData.feed.entries.length;
         for (var i=0; i<len; i++) {
             var lnk = response.responseData.feed.entries[i].link;
+            //console.log(lnk);
             var articleBox = $("<div id=\"article_" + i + "\" class=\"article_box\"></div>");
             if ($.cookie(lnk) == "1") {
             } else {
@@ -156,7 +189,7 @@ $(function() {
 // Sploid
 // =================================================================
     function processSploidPage(url, articleBox) {
-        var articleXpath = ' and xpath="//div[@class=\'column\']"';
+        var articleXpath = ' and xpath="//div[@class=\'col description\']"';
         requestCrossDomain(url, articleXpath, function(data) {
             articleBox.append(data);
             articleBox.find('script').remove();
@@ -229,57 +262,70 @@ $(function() {
 
     // Accepts a url and a callback function to run.
     function requestCrossDomain( site, xpathParam, callback ) {
-    // If no url was passed, exit.
-    if ( !site ) {
-        console.log('No site was passed for requestCrossDomain()');
-        return false;
-    }
-    if ( !xpathParam ) {
-        xpathParam = "";
-    }
-    var yqlBase = 'http://query.yahooapis.com/v1/public/yql?q=';
-    var encodeBase = 'select * from html where url="' + site + '"';
-    var yqlCallBack = '&format=xml&callback=?';
-    var encode = encodeBase + xpathParam;
-    var yql = yqlBase + encodeURIComponent(encode) + yqlCallBack;
-
-    // Take the provided url, and add it to a YQL query. Make sure you encode it!
-    //http://code.tutsplus.com/tutorials/quick-tip-cross-domain-ajax-request-with-yql-and-jquery--net-10225
-    //var yql = 'http://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent('select * from html where url="' + site + '"') + '&format=xml&callback=?';
-    //var yql = 'http://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent('select * from html where url="http://feedproxy.google.com/~r/CrackedRSS/~3/VWvqgS0J3ko/" and xpath="//ol/li[3]/a"') + '&format=xml&callback=?';
-    //var yql = 'http://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent('select * from html where url="' + site + '"') + xpathParam + '&format=xml&callback=?';
-
-    /*
-    // BONUS: Another method of obtaining Cross Domain web pages
-    $.getJSON('http://whateverorigin.org/get?url=' +
-    encodeURIComponent('http://feedproxy.google.com/~r/CrackedRSS/~3/VWvqgS0J3ko/') + '&callback=?',
-    function (data) {
-        console.log("Success");
-
-        //If the expected response is text/plain
-        //$("#viewer").html(data.contents);
-
-        //If the expected response is JSON
-        //var response = $.parseJSON(data.contents);
-    });*/
-
-    // Request that YSQL string, and run a callback function.
-    // Pass a defined function to prevent cache-busting.
-    $.getJSON( yql, function(data) {
-        if ( data.results[0] ) {
-            // Strip out all script tags, for security reasons.
-            // BE VERY CAREFUL. This helps, but we should do more.
-            data = data.results[0].replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-
-            // If the user passed a callback, and it
-            // is a function, call it, and send through the data var.
-            if ( typeof callback === 'function') {
-                callback(data);
-            }
+        // If no url was passed, exit.
+        if ( !site ) {
+            console.log('No site was passed for requestCrossDomain()');
+            return false;
         }
-            // Else, Maybe we requested a site that doesn't exist, and nothing returned.
+        if ( !xpathParam ) {
+            xpathParam = "";
+        }
+        var yqlBase = 'http://query.yahooapis.com/v1/public/yql?q=';
+        var encodeBase = 'select * from html where url="' + site + '"';
+        var yqlCallBack = '&format=xml&callback=?';
+        var encode = encodeBase + xpathParam;
+        var yql = yqlBase + encodeURIComponent(encode) + yqlCallBack;
+
+        // Take the provided url, and add it to a YQL query. Make sure you encode it!
+        //http://code.tutsplus.com/tutorials/quick-tip-cross-domain-ajax-request-with-yql-and-jquery--net-10225
+        //var yql = 'http://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent('select * from html where url="' + site + '"') + '&format=xml&callback=?';
+        //var yql = 'http://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent('select * from html where url="http://feedproxy.google.com/~r/CrackedRSS/~3/VWvqgS0J3ko/" and xpath="//ol/li[3]/a"') + '&format=xml&callback=?';
+        //var yql = 'http://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent('select * from html where url="' + site + '"') + xpathParam + '&format=xml&callback=?';
+
+        $.getJSON( yql, function(data) {
+            //console.log(yql);
+            if ( data.results[0] ) {
+                //Strip out all script tags, for security reasons.
+                //BE VERY CAREFUL. This helps, but we should do more.
+                data = data.results[0].replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+                //If the user passed a callback, and it
+                //is a function, call it, and send through the data var.
+                //console.log(data);
+                if ( typeof callback === 'function') {
+                    callback(data);
+                }
+            }
+            //Else, Maybe we requested a site that doesn't exist, and nothing returned.
             //else throw new Error('Nothing returned from getJSON. URL=' + site);
-            else console.log('Nothing returned from getJSON. URL=' + site);
-     });
+            else {
+                console.log("Nothing returned from YQL. url=" + site);
+                callback(null);
+                /*$.getJSON('http://whateverorigin.org/get?url=' +
+                encodeURIComponent(site) + '&callback=?',
+                function (data) {
+                    if (!data) {
+                        console.log("Error. Nothing returned from whateverorigin. Returning");
+                        return;
+                    }
+                    data = data.contents.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+                    if ( typeof callback === 'function') {
+                        callback(data);
+                    }
+                });*/
+            }
+         });
+    }
+
+    function testUrl(url) {
+        if (!url) {
+            console.log("Error. No url passed");
+            return;
+        }
+
+        var articleXpath = ' and xpath="//div[@class=\'column\']"';
+        requestCrossDomain(url, articleXpath, function(result) {
+            console.log("Success");
+        });
+
     }
 });

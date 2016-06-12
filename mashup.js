@@ -51,24 +51,15 @@ $(function() {
 // ==========================================================================
 
     function getPageData(url, articleBox, articleXpath) {
-        var articleXpath = ' and xpath="//div[@class=\'mainFrame noMarginTopWithContent\']/section[@class=\'mainFrameModule last\']/div/article/section"';
+        if ($.cookie(url) == "1")
+            return;
+        else
+            urlList.push(url);
+        
         requestCrossDomain(url, articleXpath, function(result) {
             if (!result) {
-                if (url.indexOf('cracked.com/blog') != -1 ||
-                    url.indexOf('cracked.com/article_') != -1) {
-                    //If it's a blog, retry the operation after 2 secs
-                    getPageData(url, articleBox, articleXpath);
-                }
-                else if (url.indexOf('CrackedRSS') != -1) {
-                    console.log ("This is a Photoplasty page. Needs different xpath");
-                }
-                else if (url.indexOf('') != -1) {
-                    console.log ("Personal experience article");
-                    var articleXpath = ' and xpath="//div[@class=\'contentWrapper\']"';
-                }
-                else {
-                    console.log("This page did not return any results. returning " + url);
-                }
+                console.log ("Received empty page. Retrying");
+                getPageData(url, articleBox, articleXpath);
             }
             else {
                 result = result.replace(/data-img/g, 'src');
@@ -76,19 +67,23 @@ $(function() {
                 articleBox.find('script').remove();
                 var head = articleBox.find("header");
                 var title = head.find("h1").text();
-                head.remove();
-                articleBox.find("a[target=\"_blank\"]").parent().remove();
-                $(".socialShareAfterContent").remove();
-                $(".FacebookLike").remove();
                 var pageUrl = articleBox.find(".PaginationContent").find("ul li:first-child").next().next().find("a").attr("href");
                 var pageList = articleBox.find(".PaginationContent").find("ul li:first-child").next().text();
                 var curPage = parseInt(pageList.split(" ")[1]);
                 var totalPage = parseInt(pageList.split(" ")[3]);
+                head.remove();
+                articleBox.find("a[target=\"_blank\"]").parent().remove();
+                articleBox.find(".socialShareAfterContent").remove();
+                articleBox.find("div.facebookWrapperModule").remove();
+                articleBox.find("div.noMarginTopWithContent").remove();
+                articleBox.find("div.newsletterPopUp").remove();
+                articleBox.find("div#footTrack").remove();
+                articleBox.find(".ad-footer").remove();
                 articleBox.find("nav").remove();
                 //console.log("CurrPage = " + curPage + " TotalPage = " + totalPage);
                 if (curPage && totalPage && curPage < totalPage) {
                   //console.log(pageUrl);
-                  getPageData(pageUrl, articleBox);
+                  getPageData(pageUrl, articleBox, articleXpath);
                 } else {
                     var titleBox = $("<h3>" + title + "</h3>");
                     articleBox.find("footer").remove();
@@ -98,42 +93,106 @@ $(function() {
             }
         });
     }
-
+    
+    function crackedPhotoplasty(url, articleBox, photoplastyXpath) {
+        if ($.cookie(url) == "1")
+            return;
+        else
+            urlList.push(url);
+        
+        requestCrossDomain(url, photoplastyXpath, function(result) {
+        if (!result) {
+                console.log ("Received empty page. Retrying");
+                crackedPhotoplasty(url, articleBox, photoplastyXpath);
+            }
+            else {
+                result = result.replace(/data-img/g, 'src');
+                result = result.replace(/data-original/g, 'src');
+                articleBox.append($(result));
+                var head = articleBox.find("div.content-header");
+                var title = head.find("h1").text();
+                var titleBox = $("<h3>" + title + "</h3>");
+                articleBox.find(".bannerAd").remove();
+                articleBox.find('noscript').remove();
+                articleBox.find("footer").remove();
+                articleBox.find("div#recommendedForYourPleasure").remove();
+                articleBox.find("div.content-header").remove();
+                articleBox.find("div.sidebar").remove();
+                articleBox.find(".social-share-bottom").remove();
+                articleBox.find("div.comments-wrap").remove();
+                articleBox.find(".persistent-share-inner").remove();
+                $("#articles").append(titleBox);
+                $("#articles").append(articleBox);
+            }
+        });
+    }
+    
     //Parse Cracked RSS feed
     function parseCrackedRSS(response) {
       $(".title").html("Cracked");
       var crackedHome = "http://cracked.com/"
       var len = response.responseData.feed.entries.length;
       var photoplastyXpath = ' and xpath="//ol/li[3]/a"';
+      var articleXpath = ' and xpath="//div[@class=\'mainFrame noMarginTopWithContent\']/section[@class=\'mainFrameModule last\']/div/article/section"';
+      var personalExperienceXpath = ' and xpath="//div[@class=\'contentWrapper\']"';
       //var articleXpath = ' and xpath="//div[@class=\'mainFrame noMarginTopWithContent\']/section[@class=\'mainFrameModule last\']/div/article/section"';
+      var global_article = len+1;
       for (var i=0; i<len; i++) {
         var link = response.responseData.feed.entries[i].link;
         var title = response.responseData.feed.entries[i].title;
-        var resr = link.split("/");
-        var temp = resr[resr.length - 1];
-        if (temp == "") {
-            //No html page at the end means this is a Photoplasty site
+        var articleBox = $("<div id=\"article_" + i + "\" class=\"article_box\"></div>");
+
+        //console.log ("Processing link " + link);
+        if (link.indexOf("html") != -1) {
+            //If the link contains html, it is one among (article, video or personal-experiences)
+            if (link.indexOf("video") != -1) {
+                //Skip if it is a video. Cracked videos are lame
+                console.log("Cracked: Video link. Passing.");
+                continue;
+            } else if (link.indexOf("article_") != -1) {
+                var resr = link.split("/");
+                var page_link = crackedHome + resr[resr.length - 1];
+                getPageData(page_link, articleBox, articleXpath);
+                //Working
+            } else if (link.indexOf("personal-experiences")) {
+                var resr = link.split("/");
+                var page_link = crackedHome + resr[resr.length - 1];
+                crackedPhotoplasty(page_link, articleBox, personalExperienceXpath);
+            } else {
+                console.log("Cracked: Unknown url type " + link);
+            }
+        } else {
+            //If the link does not contain html, it's (photoplasty OR blog)
             requestCrossDomain(link, photoplastyXpath, function(data) {
-                var lnk = $(data).attr("href");
-                var articleBox = $("<div id=\"article_" + i + "\" class=\"article_box\"></div>");
-                if ($.cookie(lnk) == "1") {
+                if (!data) {
+                    //console.log("Cracked: Unable to get data. trying pp_xpath " + link);
+                    var pp_xpath = ' and xpath="//div[@id=\'navbar\']/ul[@id=\'navbarTitle\']/li/a"';
+                    requestCrossDomain(link, pp_xpath, function(data_) {
+                        if (!data_) {
+                            console.log("Cracked: Unable to fetch the url. " + link);
+                        } else {
+                            articleBox = $("<div id=\"article_" + global_article++ + "\" class=\"article_box\"></div>");
+                            var page_link = $(data_).attr("href");
+                            var pp = ' and xpath="//div[@data-type=\'photoplasty\']"';
+                            crackedPhotoplasty(page_link, articleBox, pp);
+                            //Working
+                        }
+                    });
+                } else if (data.indexOf("blog") != -1) {
+                    var page_link = $(data).attr("href");
+                    articleBox = $("<div id=\"article_" + global_article++ + "\" class=\"article_box\"></div>");
+                    getPageData(page_link, articleBox, articleXpath);
+                    //Working
+                } else if (data.indexOf("photoplasty_") != -1) {
+                    var page_link = $(data).attr("href");
+                    var pp = ' and xpath="//div[@data-type=\'photoplasty\']"';
+                    articleBox = $("<div id=\"article_" + global_article++ + "\" class=\"article_box\"></div>");
+                    crackedPhotoplasty(page_link, articleBox, pp);
+                    //Working
                 } else {
-                    urlList.push(lnk);
-                    getPageData(lnk, articleBox);
+                    console.log("Unknown category " + data);
                 }
             });
-        } else if (temp.substr(0, 5) == "video") {
-            //If it is a video link, pass it. Cracked videos are lame
-            console.log("Video link. Passing")
-            continue;
-        } else {
-            var pageUrl = crackedHome + temp;
-            var articleBox = $("<div id=\"article_" + i + "\" class=\"article_box\"></div>");
-            if ($.cookie(pageUrl) == "1") {
-            } else {
-                urlList.push(pageUrl);
-                getPageData(pageUrl, articleBox);
-	    }
         }
       }
     }
@@ -263,6 +322,7 @@ $(function() {
     // Accepts a url and a callback function to run.
     function requestCrossDomain( site, xpathParam, callback ) {
         // If no url was passed, exit.
+        // console.log("ReqCrossDomain: site=" + site);
         if ( !site ) {
             console.log('No site was passed for requestCrossDomain()');
             return false;

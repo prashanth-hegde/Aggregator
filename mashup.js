@@ -163,6 +163,10 @@ $(function() {
             }
         } else {
             //If the link does not contain html, it's (photoplasty OR blog)
+            if (link.indexOf("video") != -1) {
+              console.log("Cracked: Video link. Passing.");
+              continue;
+            }
             requestCrossDomain(link, photoplastyXpath, function(data) {
                 if (!data) {
                     //console.log("Cracked: Unable to get data. trying pp_xpath " + link);
@@ -358,7 +362,7 @@ $(function() {
             //Else, Maybe we requested a site that doesn't exist, and nothing returned.
             //else throw new Error('Nothing returned from getJSON. URL=' + site);
             else {
-                console.log("Nothing returned from YQL. url=" + site);
+                //console.log("Nothing returned from YQL. url=" + site);
                 callback(null);
                 /*$.getJSON('http://whateverorigin.org/get?url=' +
                 encodeURIComponent(site) + '&callback=?',

@@ -225,6 +225,15 @@ $(function() {
                 var act_img = ($(image).attr("data-img"));
                 $(image).attr("src", act_img);
             });
+            articleBox.find("div.description").find("a").each(function(k, imagesrc) {
+                var img_ = $(imagesrc).attr("href");
+                if (img_.indexOf(".jpg") || img_.indexOf(".png") ||
+                    img_.indexOf("gif")) {
+                    imgtag = $(imagesrc).find("img");
+                    $(imagesrc).parent().append(imgtag);
+                    $(imagesrc).remove();
+                }
+            });
             $("#articles").append(titleBox);
             $("#articles").append(articleBox);
         });
@@ -233,7 +242,7 @@ $(function() {
     function parseIABRSS(response) {
         $(".title").html("I-Am-Bored");
         var len = response.responseData.feed.entries.length;
-        for (var i=0; i<len; i++) {
+        for (var i=0; i<2; i++) {
             var lnk = response.responseData.feed.entries[i].link;
             //console.log(lnk);
             var articleBox = $("<div id=\"article_" + i + "\" class=\"article_box\"></div>");
@@ -252,7 +261,8 @@ $(function() {
 // Sploid
 // =================================================================
     function processSploidPage(url, articleBox) {
-        var articleXpath = ' and xpath="//div[@class=\'col description\']"';
+        var articleXpath = ' and xpath="//div[@class=\'post-wrapper\']"';
+        console.log("Processing Sploid page " + url);
         requestCrossDomain(url, articleXpath, function(data) {
             articleBox.append(data);
             articleBox.find('script').remove();

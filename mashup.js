@@ -242,7 +242,7 @@ $(function() {
     function parseIABRSS(response) {
         $(".title").html("I-Am-Bored");
         var len = response.responseData.feed.entries.length;
-        for (var i=0; i<2; i++) {
+        for (var i=0; i<len; i++) {
             var lnk = response.responseData.feed.entries[i].link;
             //console.log(lnk);
             var articleBox = $("<div id=\"article_" + i + "\" class=\"article_box\"></div>");

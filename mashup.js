@@ -289,6 +289,8 @@ $(function() {
             articleBox.find("p.has-video").remove();
             articleBox.find("iframe.recommended").remove();
             articleBox.find(".js_ad-mobile-waypoint").remove();
+            articleBox.find("div.author-bio__wrapper").remove();
+            articleBox.find("div.post-bottom").remove();
             articleBox.find("hr").remove();
             $("#articles").append(titleBox);
             $("#articles").append(articleBox);

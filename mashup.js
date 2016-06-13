@@ -229,8 +229,9 @@ $(function() {
                 var img_ = $(imagesrc).attr("href");
                 if (img_.indexOf(".jpg") || img_.indexOf(".png") ||
                     img_.indexOf("gif")) {
-                    imgtag = $(imagesrc).find("img");
-                    $(imagesrc).parent().append(imgtag);
+                    imgtag = $(imagesrc).find("img").attr("src");
+                    var img_ = $(new Image()).load(imgtag);
+                    $(imagesrc).parent().append(img_);
                     $(imagesrc).remove();
                 }
             });

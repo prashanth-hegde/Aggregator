@@ -261,7 +261,7 @@ $(function() {
 // Sploid
 // =================================================================
     function processSploidPage(url, articleBox) {
-        var articleXpath = ' and xpath="//div[@class=\'post-wrapper\']"';
+        var articleXpath = ' and xpath="//div[@class=\'post-wrapper js_post-wrapper \']/article"';
         console.log("Processing Sploid page " + url);
         requestCrossDomain(url, articleXpath, function(data) {
             articleBox.append(data);
